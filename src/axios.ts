@@ -1,38 +1,16 @@
-import { transformRequest, transformResponse } from './helper/data'
-import { buildUrl } from './helper/url'
-import { processHeaders } from './helper/headers'
-import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from './types'
-import xhr from './xhr'
+import Axios from './core/Axios'
+import { extend } from './helper/util'
+import { AxiosInstance } from './types'
 
-function axios(config: AxiosRequestConfig): AxiosPromise {
-  processConfig(config)
-  return xhr(config).then(res => {
-    return transformResponseData(res)
-  })
+function createInstance(): AxiosInstance {
+  const context = new Axios()
+  const instance = Axios.prototype.request.bind(context) // 因为均是使用了request的封装
+
+  extend(instance, context)
+
+  return instance as AxiosInstance
 }
 
-function processConfig(config: AxiosRequestConfig): void {
-  config.url = transformURL(config)
-  config.headers = transformHeaders(config)
-  config.data = transformRequestData(config)
-}
+const axios = createInstance()
 
-function transformURL(config: AxiosRequestConfig): string {
-  const { url, params } = config
-  return buildUrl(url, params)
-}
-
-function transformRequestData(config: AxiosRequestConfig): any {
-  return transformRequest(config.data)
-}
-
-function transformHeaders(config: AxiosRequestConfig): any {
-  const { headers = {}, data } = config
-  return processHeaders(headers, data)
-}
-
-function transformResponseData(res: AxiosResponse): AxiosResponse {
-  res.data = transformResponse(res.data)
-  return res
-}
 export default axios
