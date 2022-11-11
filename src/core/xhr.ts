@@ -4,7 +4,7 @@ import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from '../types'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
-    const { url, data = null, method = 'GET', headers, responseType, timeout } = config // 赋默认值
+    const { url, data = null, method = 'GET', headers, responseType, timeout, cancelToken } = config // 赋默认值
 
     const request = new XMLHttpRequest()
     if (responseType) {
@@ -50,7 +50,12 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         request.setRequestHeader(name, headers[name])
       }
     })
-
+    if (cancelToken) {
+      cancelToken.promise.then(reason => {
+        request.abort()
+        reject(reason)
+      })
+    }
     request.send(data)
     function handleResponse(response: AxiosResponse): void {
       if (response.status >= 200 && response.status < 300) {
