@@ -1,10 +1,23 @@
+import cookie from '../helper/cookies'
 import { createError } from '../helper/error'
 import { parseHeaders } from '../helper/headers'
+import { isURLSameOrigin } from '../helper/url'
 import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from '../types'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
-    const { url, data = null, method = 'GET', headers, responseType, timeout, cancelToken } = config // 赋默认值
+    const {
+      url,
+      data = null,
+      method = 'GET',
+      headers,
+      responseType,
+      timeout,
+      cancelToken,
+      withCredentials,
+      xsrfCookieName,
+      xsrfHeaderName
+    } = config // 赋默认值
 
     const request = new XMLHttpRequest()
     if (responseType) {
@@ -12,6 +25,9 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
     }
     if (timeout) {
       request.timeout = timeout
+    }
+    if (withCredentials) {
+      request.withCredentials = withCredentials
     }
     request.open(method.toUpperCase(), url!, true)
 
@@ -43,6 +59,13 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       reject(createError(`Timeout of ${timeout} ms exceeded`, config, 'ECONNABORTED', request))
     }
 
+    if ((withCredentials || isURLSameOrigin(url!)) && xsrfCookieName) {
+      const xsrfValue = cookie.read(xsrfCookieName)
+      if (xsrfValue && xsrfHeaderName) {
+        headers[xsrfHeaderName] = xsrfValue
+      }
+    }
+
     Object.keys(headers).forEach(name => {
       if (data === null && name.toLowerCase() === 'content-type') {
         delete headers[name]
@@ -50,6 +73,7 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         request.setRequestHeader(name, headers[name])
       }
     })
+
     if (cancelToken) {
       cancelToken.promise.then(reason => {
         request.abort()
@@ -57,6 +81,7 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
       })
     }
     request.send(data)
+
     function handleResponse(response: AxiosResponse): void {
       if (response.status >= 200 && response.status < 300) {
         resolve(response)
