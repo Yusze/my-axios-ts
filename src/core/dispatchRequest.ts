@@ -20,8 +20,8 @@ function processConfig(config: AxiosRequestConfig): void {
 }
 
 function transformURL(config: AxiosRequestConfig): string {
-  const { url, params } = config
-  return buildUrl(url!, params)
+  const { url, params, paramsSerilizer } = config
+  return buildUrl(url!, params, paramsSerilizer)
 }
 
 // function transformRequestData(config: AxiosRequestConfig): any {
